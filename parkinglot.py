@@ -5,7 +5,7 @@
 -> vehicle 
 (park, unpark)
 """
-
+from copy import deepcopy
 from enum import Enum, auto
 
 class VehicleType(Enum):
@@ -28,6 +28,8 @@ class Slots:
 
     def unpark_vehicle(self):
         self.status = 1
+        self.vehicle = None
+        return 
 
 class Floors:
     def __init__(self, id):
@@ -38,10 +40,7 @@ class Floors:
         slot = Slots(slot["id"], slot["type"])
         self.slots.append(slot)
         return
-            
-    def get_slot(self, slot_id):
-        return self.slots.get(slot_id)
-    
+                
     def get_available_slots(self, type = None):
 
         if type:
@@ -68,7 +67,7 @@ class ParkingLot:
             for id in range(1, int(slots) +1):
                 if id == 1:
                     floor.add_slots({"id": id, "type": VehicleType.TRUCK})
-                if id == 2 or id == 3:
+                elif id == 2 or id == 3:
                     floor.add_slots({"id": id, "type": VehicleType.BIKE})
                 else:
                     floor.add_slots({"id": id, "type": VehicleType.CAR})
@@ -118,14 +117,16 @@ class ParkinglotManager:
     def unpark_vehicle(self, ticket):
 
         p_id, floor_id, slot_id = ticket.split("_")
-
+        
         if parking_lot := self.parking_lots.get(p_id):
-            if floor := parking_lot.floors.get(floor_id):
-                if slot_id < len(floor.slots):
-                    slot = floor.slots[slot_id-1]
-                    vehicle = slot.vehicle
-                    slot.unpark_vehicle()
-                    return f"Unparked vehicle with Registration Number: {vehicle.reg_no} and Color: {vehicle.color}"
+            if floor := parking_lot.get_floor(int(floor_id)):
+                
+                if int(slot_id) <= len(floor.slots):
+                    slot = floor.slots[int(slot_id)-1]
+                    vehicle = deepcopy(slot.vehicle)
+                    if vehicle:
+                        slot.unpark_vehicle()
+                        return f"Unparked vehicle with Registration Number: {vehicle.reg_no} and Color: {vehicle.color}"
 
         return "Invalid Ticket"
 
@@ -139,7 +140,6 @@ class ParkinglotManager:
                 print(f"No. of free slots for {type} on Floor {f_id}: {len(slots)}")
 
     def free_slots(self, type):
-        print(self.parking_lots)
         for p_id, parking_lot in self.parking_lots.items():
 
             for f_id, floor in parking_lot.floors.items():
@@ -156,7 +156,7 @@ class ParkinglotManager:
 
                 slots = floor.get_occupied_slots(type = type)
                 slot_ids = [str(slot.id) for slot in slots]
-                print(f'Free slots for {type} on Floor {f_id}: {",".join(slot_ids)}')
+                print(f'Occupied slots for {type} on Floor {f_id}: {",".join(slot_ids)}')
 
 
 
@@ -183,10 +183,10 @@ if __name__ == "__main__":
             if cmd[1] == "free_count":
                 parkingManager.free_count(cmd[2])
 
-            if cmd[1] == "freeslots":
+            elif cmd[1] == "free_slots":
                 parkingManager.free_slots(cmd[2])
 
-            if cmd[1] == "occupied_slots":
+            elif cmd[1] == "occupied_slots":
                 parkingManager.occupied_slots(cmd[2])
 
 
